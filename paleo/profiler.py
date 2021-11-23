@@ -90,26 +90,8 @@ class Profiler():
             logger.info('Layer: %s' % layer_spec.name)
             logger.info('- %s: %s  %s' % (flops_profiler.name, flop_based_time,
                                           flops_profiler.message))
-
-            if device_spec.is_gpu:
-                profiler = None
-                if executor == 'cudnn':
-                    from profilers.cudnn_profiler import CudnnProfiler
-                    profiler = CudnnProfiler(options)
-                elif executor == 'tensorflow':
-                    from profilers.tensorflow_profiler import (
-                        TensorFlowProfiler)
-                    profiler = TensorFlowProfiler(options)
-
-                if profiler:
-                    executor_time = profiler.profile(layer)
-                    logger.info('- %s: %s  %s' % (profiler.name, executor_time,
-                                                  profiler.message))
-
-                    results.append(
-                        (layer_spec.name, flop_based_time.total_time,
-                         executor_time.total_time, 0, flops_profiler.message,
-                         profiler.message))
+            results.append(
+                (layer_spec.name, flop_based_time.total_time))
         return results
 
     def profile_full_pass(self, device, num_warmup, num_iter, batch_size):
@@ -339,37 +321,21 @@ def profile(netspec_files, device_name, num_warmup, num_iter, extract_conv_dir,
             separator):
     """Profiling a neural network."""
 
-    def _print_tabular(cudnn_result, tensorflow_result):
-        assert len(cudnn_result) == len(tensorflow_result)
-
+    def _print_tabular(net_result):
         print(separator.join(
-            ['layer', 'ours', 'cudnn', 'tensorflow', 'ours_alg', 'cu_alg']))
-        sum_ours, sum_cu, sum_tf = 0, 0, 0
-        for cudnn_prof, tf_prof in zip(cudnn_result, tensorflow_result):
-            (layer_name, ours_time, cudnn_time, tf_time, our_msg,
-             cu_msg) = ['', 0, 0, 0, '', '']
-            if cudnn_prof:
-                layer_name, ours_time, cudnn_time, _, our_msg, cu_msg = (
-                    cudnn_prof)
-            if tf_prof:
-                layer_name, ours_time, tf_time, _, our_msg, _ = tf_prof
-
-            our_msg = our_msg.replace('CUDNN_CONVOLUTION_', '')
-            cu_msg = cu_msg.replace('CUDNN_CONVOLUTION_', '')
-
+            ['layer', 'estimated (ms)']))
+        sum_ours = 0
+        for (layer_name, estimated_time) in net_result:
             if layer_name == 'data':
                 continue
 
-            sum_ours += ours_time
-            sum_cu += cudnn_time
-            sum_tf += tf_time
+            sum_ours += estimated_time
 
             print(separator.join([
                 str(x)
-                for x in (layer_name, ours_time, cudnn_time, tf_time, our_msg,
-                          cu_msg)
+                for x in (layer_name, estimated_time)
             ]))
-        print(separator.join(['Sum', str(sum_ours), str(sum_cu), str(sum_tf)]))
+        print(separator.join(['Sum', str(sum_ours)]))
 
     all_results = dict()
     for netspec_file in netspec_files:
@@ -386,32 +352,17 @@ def profile(netspec_files, device_name, num_warmup, num_iter, extract_conv_dir,
             options.num_warmup = num_warmup
             options.ppp_comp = ppp_comp
 
-            tensorflow_result, cudnn_result = None, None
-            if executor == 'tensorflow':
-                options.use_cudnn_heuristics = False
-                tensorflow_result = profiler.profile(
-                    device_name, options, executor='tensorflow')
+            options.use_cudnn_heuristics = False
+            result = profiler.profile(device_name, options)
 
-            if not use_only_gemm:
-                options.use_cudnn_heuristics = True
-
-            if executor == 'cudnn':
-                cudnn_result = profiler.profile(
-                    device_name, options, executor='cudnn')
-
-            if cudnn_result:
-                tensorflow_result = [None] * len(cudnn_result)
-            elif tensorflow_result:
-                cudnn_result = [None] * len(tensorflow_result)
-            all_results[netspec_file] = (cudnn_result, tensorflow_result)
+            all_results[netspec_file] = result
 
     for net in all_results:
         print('Network: %s' % net)
         print('Direction: %s' % direction)
         if direction == 'backward':
             print('Gradient wrt: %s' % gradient_wrt)
-        (cu, tf) = all_results[net]
-        _print_tabular(cu, tf)
+        _print_tabular(all_results[net])
 
 
 @cli.command()
