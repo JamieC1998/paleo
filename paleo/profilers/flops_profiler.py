@@ -45,7 +45,8 @@ class FlopsProfiler(BaseProfiler):
 
         time += self._estimate_remote_fetch(
             layer, current_device, parent_devices, cross_device_bandwidth)
-        return time
+        output_data = np.prod(layer.outputs) *_BYTES_FLOAT
+        return time, output_data
 
     def _estimate_remote_fetch(self, layer, current_device, parent_devices,
                                bandwidth):

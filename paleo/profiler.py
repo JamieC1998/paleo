@@ -85,13 +85,13 @@ class Profiler():
                 options.use_cudnn_heuristics = False
 
             flops_profiler = profilers.FlopsProfiler(options, device_spec)
-            flop_based_time = flops_profiler.profile(layer)
+            flop_based_time, output_size = flops_profiler.profile(layer)
 
             logger.info('Layer: %s' % layer_spec.name)
             logger.info('- %s: %s  %s' % (flops_profiler.name, flop_based_time,
                                           flops_profiler.message))
             results.append(
-                (layer_spec.name, flop_based_time.total_time))
+                (layer_spec.name, flop_based_time.total_time, output_size))
         return results
 
     def profile_full_pass(self, device, num_warmup, num_iter, batch_size):
@@ -323,17 +323,17 @@ def profile(netspec_files, device_name, num_warmup, num_iter, extract_conv_dir,
 
     def _print_tabular(net_result):
         print(separator.join(
-            ['layer', 'estimated (ms)']))
+            ['layer', 'estimated (ms)', 'output size (B)']))
         sum_ours = 0
-        for (layer_name, estimated_time) in net_result:
-            if layer_name == 'data':
-                continue
+        for (layer_name, estimated_time, output) in net_result:
+            #if layer_name == 'data':
+            #    continue
 
             sum_ours += estimated_time
 
             print(separator.join([
                 str(x)
-                for x in (layer_name, estimated_time)
+                for x in (layer_name, estimated_time, output)
             ]))
         print(separator.join(['Sum', str(sum_ours)]))
 
