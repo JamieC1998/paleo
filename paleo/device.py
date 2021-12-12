@@ -106,6 +106,10 @@ GPU_GEFORCE_750M = Device(
 CPU_I7_5930K = Device(
     'CPU i7 5930K', clock=6 * 35000, peek_gflop=289, mem_bandwidth=68)
 
+GPU_ADRENO_640 = Device('Adreno 640', clock=585, peek_gflop=954.7, mem_bandwidth=34, is_gpu=True)
+
+GPU_RTX_3060 = Device('RTX 3060', clock=1.32 * 1000, peek_gflop=12.7 * 1000, mem_bandwidth=360, is_gpu=True)
+
 DEVICES = {
     'TITAN_X': GPU_TITAN_X,
     'K20': GPU_K20,
@@ -114,5 +118,7 @@ DEVICES = {
     'K80': GPU_K80,
     'GEFORCE_780_TI': GPU_GEFORCE_780_TI,
     'GEFORCE_750_M': GPU_GEFORCE_750M,
-    'CPU_I7': CPU_I7_5930K
+    'CPU_I7': CPU_I7_5930K,
+    'Adreno_640': GPU_ADRENO_640,
+    'RTX_3060': GPU_RTX_3060
 }
