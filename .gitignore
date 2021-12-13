@@ -90,3 +90,10 @@ ENV/
 
 # Rope project settings
 .ropeproject
+1_generate_paleo_run_session_script.py
+2_paleo_run_session_script.sh
+3_paleo_2_simulator_template_generator.py
+6_Simulator_Templates_Execution_Times/
+5_Simulator_Templates_Nets/
+4_Paleo_Nets_Execution_Info/
+3_Original_Paleo_Nets/
